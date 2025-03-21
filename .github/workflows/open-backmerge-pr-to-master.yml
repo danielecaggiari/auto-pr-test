@@ -40,9 +40,7 @@ jobs:
 
         CONFLICTS=false
         git cherry-pick ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} \
-        || CONFLICTS=true && git reset --hard origin/${ORIGINAL_BRANCH}
-
-        echo "Conflicts: $CONFLICTS"
+        || (CONFLICTS=true && git reset --hard origin/${ORIGINAL_BRANCH})
 
         git push origin "${BACKMERGE_BRANCH}"
 
