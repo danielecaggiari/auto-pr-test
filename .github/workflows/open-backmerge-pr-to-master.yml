@@ -40,7 +40,7 @@ jobs:
 
         CONFLICTS=false
         git cherry-pick ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} \
-        || (CONFLICTS=true && git reset --hard origin/${ORIGINAL_BRANCH})
+        || { CONFLICTS=true && git reset --hard origin/${ORIGINAL_BRANCH} }
 
         git push origin "${BACKMERGE_BRANCH}"
 
@@ -60,4 +60,4 @@ jobs:
           --title "[master] ${{ github.event.pull_request.title }}" \
           --body-file body.txt \
           --assignee "${AUTHOR}" \
-          --label backmerge $(${CONFLICTS} && echo "--draft --label conflicts")
+          --label backmerge $(${CONFLICTS} && echo "--label conflicts")
