@@ -1,4 +1,4 @@
-name: Open production PR to master
+name: Open backmerge PR to master
 on:
   push:
   pull_request_target:
@@ -6,7 +6,7 @@ on:
     branches: [production]
 
 jobs:
-  open_prod_pr_to_master:
+  backmerge:
     if: |
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'production'
@@ -17,27 +17,34 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Install GitHub CLI
       run: |
         sudo apt update
         sudo apt install gh -y
-    - name: Create PR to master branch
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Set up Git identity
       run: |
-        PROD_PR_BRANCH="${{ github.event.pull_request.head.ref }}"
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+    - name: Open backmerge PR
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -x
 
-        git fetch origin production:production
-        git fetch origin "${PROD_PR_BRANCH}":"${PROD_PR_BRANCH}"
+        ORIGINAL_BRANCH="${{ github.event.pull_request.head.ref }}"
+        BACKMERGE_BRANCH="backmerge/${ORIGINAL_BRANCH}"
 
-        MASTER_PR_BRANCH="backmerge/${PROD_PR_BRANCH}"
-        FORK_POINT="$(git rev-list --boundary origin/${PROD_PR_BRANCH}...origin/production | grep "^-" | cut -c2- | tail -1)"
+        git switch -c ${BACKMERGE_BRANCH} origin/master
 
-        echo "revlist : $(git rev-list --boundary origin/${PROD_PR_BRANCH}...origin/production)"
-        echo "orkpointL : $FORK_POINT"
+        CONFLICTS=false
+        git cherry-pick ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} \
+        || CONFLICTS=true && git reset --hard origin/${ORIGINAL_BRANCH}
 
-        git checkout -b "${MASTER_PR_BRANCH}" "${FORK_POINT}"
-        git push origin "${MASTER_PR_BRANCH}"
+        echo "Conflicts: $CONFLICTS"
+
+        git push origin "${BACKMERGE_BRANCH}"
 
         AUTHOR="${{ github.event.pull_request.user.login }}"
 
@@ -50,9 +57,9 @@ jobs:
 
         gh pr create \
           --repo "${{ github.repository }}" \
-          --head "${MASTER_PR_BRANCH}" \
+          --head "${BACKMERGE_BRANCH}" \
           --base "master" \
           --title "[master] ${{ github.event.pull_request.title }}" \
           --body-file body.txt \
           --assignee "${AUTHOR}" \
-          --label "master"
+          --label backmerge $(${CONFLICTS} && echo "--label conflicts")
