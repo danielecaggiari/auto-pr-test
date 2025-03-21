@@ -1,4 +1,4 @@
-name: Needs rebase
+name: Open production PR to master
 on:
   push:
   pull_request_target:
@@ -25,7 +25,7 @@ jobs:
         PROD_PR_BRANCH="${{ github.event.pull_request.head.ref }}"
 
         git fetch origin master
-        git fetch origin "${PROD_PR_BRANCH}""
+        git fetch origin "${PROD_PR_BRANCH}"
 
         MASTER_PR_BRANCH="backmerge/${PROD_PR_BRANCH}"
 
