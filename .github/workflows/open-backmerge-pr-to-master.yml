@@ -1,4 +1,4 @@
-name: Open production PR to master
+name: Open backmerge PR to master
 on:
   push:
   pull_request_target:
@@ -6,7 +6,7 @@ on:
     branches: [production]
 
 jobs:
-  open_prod_pr_to_master:
+  open_backmerge_pr_to_master:
     if: |
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'production'
@@ -24,6 +24,8 @@ jobs:
         sudo apt update
         sudo apt install gh -y
     - name: Open backmerge PR targeting master branch
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         ORIGINAL_BRANCH="${{ github.event.pull_request.head.ref }}"
         BACKMERGE_BRANCH="backmerge/${ORIGINAL_BRANCH}"
