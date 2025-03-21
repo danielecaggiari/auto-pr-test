@@ -1,4 +1,4 @@
-name: Needs rebase
+name: Open production PR to master
 on:
   push:
   pull_request_target:
@@ -11,6 +11,9 @@ jobs:
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'production'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -24,22 +27,32 @@ jobs:
       run: |
         PROD_PR_BRANCH="${{ github.event.pull_request.head.ref }}"
 
-        git fetch origin master
-        git fetch origin "${PROD_PR_BRANCH}""
+        git fetch origin production:production
+        git fetch origin "${PROD_PR_BRANCH}":"${PROD_PR_BRANCH}"
 
         MASTER_PR_BRANCH="backmerge/${PROD_PR_BRANCH}"
+        FORK_POINT="$(git rev-list --boundary origin/${PROD_PR_BRANCH}...origin/production | grep "^-" | cut -c2- | tail -1)"
 
-        git checkout -b "${MASTER_PR_BRANCH}" "origin/${PROD_PR_BRANCH}"
+        echo "revlist : $(git rev-list --boundary origin/${PROD_PR_BRANCH}...origin/production)"
+        echo "orkpointL : $FORK_POINT"
 
+        git checkout -b "${MASTER_PR_BRANCH}" "${FORK_POINT}"
         git push origin "${MASTER_PR_BRANCH}"
 
-        AUTHOR="@${{ github.event.pull_request.user.login }}"
+        AUTHOR="${{ github.event.pull_request.user.login }}"
+
+        {
+          echo "$(jq -r .pull_request.body "${GITHUB_EVENT_PATH}")"
+          echo
+          echo
+          echo "_Production PR: #${{ github.event.pull_request.number }} @ @${AUTHOR}_"
+        } > body.txt
 
         gh pr create \
           --repo "${{ github.repository }}" \
           --head "${MASTER_PR_BRANCH}" \
           --base "master" \
           --title "[master] ${{ github.event.pull_request.title }}" \
-          --body "$(jq -r .pull_request.body "${GITHUB_EVENT_PATH}")\n\n_Production PR: #${{ github.event.pull_request.number }} @ ${AUTHOR}" \
+          --body-file body.txt \
           --assignee "${AUTHOR}" \
           --label "master"
