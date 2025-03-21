@@ -36,13 +36,13 @@ jobs:
 
         git push origin "${MASTER_PR_BRANCH}"
 
-        AUTHOR="@${{ github.event.pull_request.user.login }}"
+        AUTHOR="${{ github.event.pull_request.user.login }}"
 
         gh pr create \
           --repo "${{ github.repository }}" \
           --head "${MASTER_PR_BRANCH}" \
           --base "master" \
           --title "[master] ${{ github.event.pull_request.title }}" \
-          --body "$(jq -r .pull_request.body "${GITHUB_EVENT_PATH}")\n\n_Production PR: #${{ github.event.pull_request.number }} @ ${AUTHOR}" \
+          --body "$(jq -r .pull_request.body "${GITHUB_EVENT_PATH}")\n\n_Production PR: #${{ github.event.pull_request.number }} @ @${AUTHOR}" \
           --assignee "${AUTHOR}" \
           --label "master"
