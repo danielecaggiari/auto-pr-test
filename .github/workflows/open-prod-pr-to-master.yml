@@ -32,7 +32,7 @@ jobs:
 
         MASTER_PR_BRANCH="backmerge/${PROD_PR_BRANCH}"
         FORK_POINT="$(git rev-list --boundary origin/${PROD_PR_BRANCH}...origin/production | grep "^-" | cut -c2- | tail -1)"
-        echo $FORK_POINT
+        echo "orkpointL : $FORK_POINT"
         git checkout -b "${MASTER_PR_BRANCH}" "${FORK_POINT}"
         git push origin "${MASTER_PR_BRANCH}"
 
