@@ -53,7 +53,7 @@ jobs:
             echo
             echo
           fi
-          echo "_Production PR: #${{ github.event.pull_request.number }} @ @${AUTHOR}_"
+          echo "`production` PR: #${{ github.event.pull_request.number }} @ @${AUTHOR}_"
         } > body.txt
 
         gh pr create \
