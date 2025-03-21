@@ -47,7 +47,7 @@ jobs:
         AUTHOR="${{ github.event.pull_request.user.login }}"
 
         {
-          echo "\`:globe_with_meridians: production\` PR: #${{ github.event.pull_request.number }} by @${AUTHOR}"
+          echo "\`🌐 production\` PR: #${{ github.event.pull_request.number }} by @${AUTHOR}"
           ORIGINAL_BODY=$(jq -r 'select(.pull_request.body != null) | .pull_request.body' "${GITHUB_EVENT_PATH}")
           if [[ -n "${ORIGINAL_BODY}" ]]; then
             echo
