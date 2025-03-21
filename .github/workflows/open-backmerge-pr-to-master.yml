@@ -29,6 +29,8 @@ jobs:
         git config user.email "github-actions@github.com"
     - name: Open backmerge PR
       run: |
+        set -x
+
         ORIGINAL_BRANCH="${{ github.event.pull_request.head.ref }}"
         BACKMERGE_BRANCH="backmerge/${ORIGINAL_BRANCH}"
 
@@ -36,7 +38,7 @@ jobs:
 
         CONFLICTS=false
         git cherry-pick ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} \
-        || CONFLICTS=true && git reset --hard ${ORIGINAL_BRANCH}
+        || CONFLICTS=true && git reset --hard origin/${ORIGINAL_BRANCH}
 
         git push origin "${BACKMERGE_BRANCH}"
 
