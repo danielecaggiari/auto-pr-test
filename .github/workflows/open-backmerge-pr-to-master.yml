@@ -47,9 +47,12 @@ jobs:
         AUTHOR="${{ github.event.pull_request.user.login }}"
 
         {
-          echo "$(jq -r .pull_request.body "${GITHUB_EVENT_PATH}")"
-          echo
-          echo
+          ORIGINAL_BODY=$(jq -r 'select(.pull_request.body != null) | .pull_request.body' "${GITHUB_EVENT_PATH}")
+          if [[ -n "${ORIGINAL_BODY}" ]]; then
+            echo "${ORIGINAL_BODY}"
+            echo
+            echo
+          fi
           echo "_Production PR: #${{ github.event.pull_request.number }} @ @${AUTHOR}_"
         } > body.txt
 
