@@ -28,6 +28,8 @@ jobs:
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
     - name: Open backmerge PR
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         set -x
 
