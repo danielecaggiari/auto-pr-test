@@ -60,4 +60,4 @@ jobs:
           --title "[master] ${{ github.event.pull_request.title }}" \
           --body-file body.txt \
           --assignee "${AUTHOR}" \
-          --label backmerge $(${CONFLICTS} && echo "--label conflicts")
+          --label backmerge $(${CONFLICTS} && echo "--draft --label conflicts")
