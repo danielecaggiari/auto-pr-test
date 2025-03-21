@@ -17,27 +17,24 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     - name: Install GitHub CLI
       run: |
         sudo apt update
         sudo apt install gh -y
-    - name: Create PR to master branch
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Open backmerge PR targeting master branch
       run: |
-        PROD_PR_BRANCH="${{ github.event.pull_request.head.ref }}"
+        ORIGINAL_BRANCH="${{ github.event.pull_request.head.ref }}"
+        BACKMERGE_BRANCH="backmerge/${ORIGINAL_BRANCH}"
 
-        git fetch origin production
-        git fetch origin "${PROD_PR_BRANCH}":"${PROD_PR_BRANCH}"
+        git switch -c ${BACKMERGE_BRANCH} origin/master
 
-        MASTER_PR_BRANCH="backmerge/${PROD_PR_BRANCH}"
-        FORK_POINT="$(git rev-list --boundary origin/${PROD_PR_BRANCH}...origin/production | grep "^-" | cut -c2- | tail -1)"
+        CONFLICTS=false
+        git cherry-pick ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+        || CONFLICTS=true && git reset --hard ${ORIGINAL_BRANCH}
 
-        echo "revlist : $(git rev-list --boundary origin/${PROD_PR_BRANCH}...origin/production)"
-        echo "orkpointL : $FORK_POINT"
-
-        git checkout -b "${MASTER_PR_BRANCH}" "${FORK_POINT}"
-        git push origin "${MASTER_PR_BRANCH}"
+        git push origin "${BACKMERGE_BRANCH}"
 
         AUTHOR="${{ github.event.pull_request.user.login }}"
 
@@ -50,9 +47,9 @@ jobs:
 
         gh pr create \
           --repo "${{ github.repository }}" \
-          --head "${MASTER_PR_BRANCH}" \
+          --head "${BACKMERGE_BRANCH}" \
           --base "master" \
           --title "[master] ${{ github.event.pull_request.title }}" \
           --body-file body.txt \
           --assignee "${AUTHOR}" \
-          --label "master"
+          --label backmerge $(${CONFLICTS} && echo "--label conflicts")
