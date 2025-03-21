@@ -6,7 +6,7 @@ on:
     branches: [production]
 
 jobs:
-  open_backmerge_pr_to_master:
+  backmerge:
     if: |
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'production'
@@ -27,7 +27,7 @@ jobs:
       run: |
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
-    - name: Open backmerge PR targeting master branch
+    - name: Open backmerge PR
       run: |
         ORIGINAL_BRANCH="${{ github.event.pull_request.head.ref }}"
         BACKMERGE_BRANCH="backmerge/${ORIGINAL_BRANCH}"
@@ -35,7 +35,7 @@ jobs:
         git switch -c ${BACKMERGE_BRANCH} origin/master
 
         CONFLICTS=false
-        git cherry-pick ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+        git cherry-pick ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} \
         || CONFLICTS=true && git reset --hard ${ORIGINAL_BRANCH}
 
         git push origin "${BACKMERGE_BRANCH}"
