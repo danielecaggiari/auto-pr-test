@@ -1,0 +1,63 @@
+name: Open backmerge PR to master
+on:
+  push:
+  pull_request_target:
+    types: [closed]
+    branches: [production]
+
+jobs:
+  backmerge:
+    if: |
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'production'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Install GitHub CLI
+      run: |
+        sudo apt update
+        sudo apt install gh -y
+    - name: Set up Git identity
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+    - name: Open backmerge PR
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -x
+
+        ORIGINAL_BRANCH="${{ github.event.pull_request.head.ref }}"
+        BACKMERGE_BRANCH="backmerge/${ORIGINAL_BRANCH}"
+
+        git switch -c ${BACKMERGE_BRANCH} origin/master
+
+        CONFLICTS=false
+        git cherry-pick ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} \
+        || CONFLICTS=true && git reset --hard origin/${ORIGINAL_BRANCH}
+
+        git push origin "${BACKMERGE_BRANCH}"
+
+        AUTHOR="${{ github.event.pull_request.user.login }}"
+
+        {
+          echo "$(jq -r .pull_request.body "${GITHUB_EVENT_PATH}")"
+          echo
+          echo
+          echo "_Production PR: #${{ github.event.pull_request.number }} @ @${AUTHOR}_"
+        } > body.txt
+
+        gh pr create \
+          --repo "${{ github.repository }}" \
+          --head "${BACKMERGE_BRANCH}" \
+          --base "master" \
+          --title "[master] ${{ github.event.pull_request.title }}" \
+          --body-file body.txt \
+          --assignee "${AUTHOR}" \
+          --label backmerge $(${CONFLICTS} && echo "--label conflicts")
